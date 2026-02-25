@@ -1,0 +1,21 @@
+{
+  "name": "esbuild-ejs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "esbuild plugin to compile .ejs templates into JS modules using dolla's createElement",
+  "main": "src/index.js",
+  "files": ["src"],
+  "keywords": ["esbuild", "plugin", "ejs", "template"],
+  "author": "Ben Ehmke",
+  "license": "MIT",
+  "dependencies": {
+    "dolla": "^1.5.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  },
+  "scripts": {
+    "test": "node --test test/test.js"
+  }
+}
