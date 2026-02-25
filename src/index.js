@@ -10,7 +10,7 @@ function toValidIdentifier(name) {
 }
 
 export default function ejsPlugin(options = {}) {
-  const { filter = /\.ejs$/i } = options;
+  const { filter = /\.ejs$/i, open, close } = options;
 
   return {
     name: 'ejs-plugin',
@@ -20,7 +20,7 @@ export default function ejsPlugin(options = {}) {
         const base = path.basename(args.path, '.ejs');
         const fnName = toValidIdentifier(base);
 
-        const tree = parse(source);
+        const tree = parse(source, { open, close });
         const contents = compile(tree, fnName);
 
         return { contents, loader: 'js' };

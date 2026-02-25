@@ -3,7 +3,7 @@ const VOID_ELEMENTS = new Set([
   'link', 'meta', 'param', 'source', 'track', 'wbr'
 ]);
 
-export function parse(template) {
+export function parse(template, { open = '<%', close = '%>' } = {}) {
   let pos = 0;
 
   function peek() {
@@ -83,7 +83,7 @@ export function parse(template) {
 
   function parseText() {
     let text = '';
-    while (pos < template.length && !match('<')) {
+    while (pos < template.length && !match('<') && !match(open)) {
       text += advance();
     }
     if (text) return { type: 'text', value: text };
@@ -91,17 +91,17 @@ export function parse(template) {
   }
 
   function parseEJS() {
-    advance(2); // <%
+    advance(open.length);
     let modifier = null;
     if (match('=')) { modifier = 'escape'; advance(); }
     else if (match('-')) { modifier = 'unescape'; advance(); }
     else if (match('#')) { modifier = 'comment'; advance(); }
 
     let code = '';
-    while (pos < template.length && !match('%>')) {
+    while (pos < template.length && !match(close)) {
       code += advance();
     }
-    advance(2); // %>
+    advance(close.length);
 
     return { type: 'expression', value: code.trim(), modifier };
   }
@@ -139,7 +139,7 @@ export function parse(template) {
     while (pos < template.length) {
       if (match('</')) break;
 
-      if (match('<%')) {
+      if (match(open)) {
         children.push(parseEJS());
       } else if (match('<')) {
         children.push(parseTag());

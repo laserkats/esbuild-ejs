@@ -78,6 +78,31 @@ describe('parser', () => {
     assert.equal(expr.value, 'rawHTML');
     assert.equal(expr.modifier, 'unescape');
   });
+
+  test('parses with custom [[ ]] delimiters', () => {
+    const tree = parse(
+      `<div><span>[[= 'Hello World' ]]</span></div>`,
+      { open: '[[', close: ']]' }
+    );
+    assert.deepStrictEqual(tree, {
+      type: 'root',
+      children: [{
+        type: 'tag',
+        name: 'div',
+        attrs: {},
+        children: [{
+          type: 'tag',
+          name: 'span',
+          attrs: {},
+          children: [{
+            type: 'expression',
+            value: "'Hello World'",
+            modifier: 'escape'
+          }]
+        }]
+      }]
+    });
+  });
 });
 
 describe('compiler', () => {
@@ -139,6 +164,20 @@ describe('esbuild integration', () => {
     const output = result.outputFiles[0].text;
     assert.ok(output.includes('createElement'));
     assert.ok(output.includes('Hello World'));
+  });
+
+  test('compiles .ejs file with custom delimiters', async () => {
+    const result = await esbuild.build({
+      entryPoints: [path.join(__dirname, 'fixtures/custom_delimiters.html.ejs')],
+      bundle: false,
+      write: false,
+      plugins: [ejsPlugin({ open: '[[', close: ']]' })],
+    });
+
+    const output = result.outputFiles[0].text;
+    assert.ok(output.includes('createElement'));
+    assert.ok(output.includes('Hello World'));
+    assert.ok(!output.includes('[['));
   });
 
   test('uses filename as function name', async () => {
