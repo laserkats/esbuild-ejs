@@ -20,8 +20,8 @@ export default function ejsPlugin(options = {}) {
         const base = path.basename(args.path, '.ejs');
         const fnName = toValidIdentifier(base);
 
-        const tree = parse(source, { open, close });
-        const contents = compile(tree, fnName);
+        const results = parse(source, { open, close });
+        const contents = compile(results, fnName);
 
         return { contents, loader: 'js' };
       });

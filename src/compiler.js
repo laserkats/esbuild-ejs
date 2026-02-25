@@ -1,4 +1,4 @@
-export function compile(tree, functionName = 'template') {
+export function compile(results, functionName = 'template') {
 
   function compileNode(node) {
     if (node.type === 'text') {
@@ -41,17 +41,15 @@ export function compile(tree, functionName = 'template') {
     return null;
   }
 
-  const rootChildren = tree.children
+  const rootChildren = results
     .map(compileNode)
     .filter(c => c !== null);
 
   let body;
-  if (rootChildren.length === 1) {
-    body = `return ${rootChildren[0]};`;
-  } else if (rootChildren.length > 1) {
+  if (rootChildren.length > 0) {
     body = `return [${rootChildren.join(', ')}];`;
   } else {
-    body = 'return null;';
+    body = 'return [];';
   }
 
   return [

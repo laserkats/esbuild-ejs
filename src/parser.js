@@ -151,6 +151,5 @@ export function parse(template, { open = '<%', close = '%>' } = {}) {
     return children;
   }
 
-  const children = parseChildren();
-  return { type: 'root', children };
+  return parseChildren();
 }
