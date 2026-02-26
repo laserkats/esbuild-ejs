@@ -7,7 +7,7 @@ describe('compilation', () => {
     const t = new Template(`<div><span><%= 'Hello World' %></span></div>`);
     const result = t.toModule('application');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function application() {
   return [createElement("div", {content: createElement("span", {content: 'Hello World'})})];
@@ -19,7 +19,7 @@ export default function application() {
     const t = new Template(`<div>A</div><div>B</div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div", {content: "A"}), createElement("div", {content: "B"})];
@@ -31,7 +31,7 @@ export default function template() {
     const t = new Template(`<div class="container"><span>Hello</span></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div", {"class": "container", content: createElement("span", {content: "Hello"})})];
@@ -43,7 +43,7 @@ export default function template() {
     const t = new Template(`<div><span>A</span><span>B</span></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div", {content: [createElement("span", {content: "A"}), createElement("span", {content: "B"})]})];
@@ -55,7 +55,7 @@ export default function template() {
     const t = new Template(`<div></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div")];
@@ -67,7 +67,7 @@ export default function template() {
     const t = new Template('Hello <%= name %>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({name}) {
   return ["Hello ", name];
@@ -79,7 +79,7 @@ export default function template({name}) {
     const t = new Template("Hello <%= {foo: 'test'}[name] %>");
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({name}) {
   return ["Hello ", {foo: 'test'}[name]];
@@ -93,7 +93,7 @@ export default function template({name}) {
     );
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({name}) {
   return ["Hello ", Array.from([name]).forEach(async (clause_code, index) => { return clause_code })];
@@ -105,7 +105,7 @@ export default function template({name}) {
     const t = new Template('<%= 1 %>\n<%= 2 %>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [1, 2];
@@ -117,7 +117,7 @@ export default function template() {
     const t = new Template('<%= 1 %>\n<span>span</span>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [1, createElement("span", {content: "span"})];
@@ -129,10 +129,36 @@ export default function template() {
     const t = new Template('Hello <%= x(); %>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({x}) {
   return ["Hello ", x()];
+}
+`);
+  });
+
+  test('hoists import statement to module level', () => {
+    const t = new Template(`<% import { listenerElement } from 'dolla' %><div><%= listenerElement('div', {content: name}, 'click', handler) %></div>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+import { listenerElement } from 'dolla';
+
+export default function template({name, handler}) {
+  return [createElement("div", {content: listenerElement('div', {content: name}, 'click', handler)})];
+}
+`);
+  });
+
+  test('aliases createElement when user imports createElement from another package', () => {
+    const t = new Template(`<% import createElement from 'jquery' %><div><%= createElement() %></div>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import __createElement from 'dolla/createElement';
+import createElement from 'jquery';
+
+export default function template() {
+  return [__createElement("div", {content: createElement()})];
 }
 `);
   });
@@ -143,7 +169,7 @@ describe('parameter extraction', () => {
     const t = new Template(`<div><span><%= name %></span><span><%= greeting %></span></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({name, greeting}) {
   return [createElement("div", {content: [createElement("span", {content: name}), createElement("span", {content: greeting})]})];
@@ -155,7 +181,7 @@ export default function template({name, greeting}) {
     const t = new Template(`<div><%= 'Hello World' %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div", {content: 'Hello World'})];
@@ -167,7 +193,7 @@ export default function template() {
     const t = new Template(`<div><%= user.name %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({user}) {
   return [createElement("div", {content: user.name})];
@@ -179,7 +205,7 @@ export default function template({user}) {
     const t = new Template(`<div><%= foo %><%= foo %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({foo}) {
   return [createElement("div", {content: [foo, foo]})];
@@ -191,7 +217,7 @@ export default function template({foo}) {
     const t = new Template(`<div><%= typeof transparent != "undefined" ? klass : '' %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({transparent, klass}) {
   return [createElement("div", {content: typeof transparent != "undefined" ? klass : ''})];
@@ -203,7 +229,7 @@ export default function template({transparent, klass}) {
     const t = new Template(`<div><%= avatarTemplate({ account: account }) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({avatarTemplate, account}) {
   return [createElement("div", {content: avatarTemplate({ account: account })})];
@@ -215,7 +241,7 @@ export default function template({avatarTemplate, account}) {
     const t = new Template(`<div><%= fn({ key: value }) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({fn, value}) {
   return [createElement("div", {content: fn({ key: value })})];
@@ -232,7 +258,7 @@ describe('scoping', () => {
 <div><%= avatarTemplate({ account: x(files), klass: B }) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({models, avatarTemplate, files}) {
   function x(files) { return files.test(); }
@@ -247,7 +273,7 @@ export default function template({models, avatarTemplate, files}) {
 <div><%= f(items, (f) => { return __v; }) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({items, __v}) {
   function f(items, template) { return items.map((file) => { const row = template(file); return row; }); }
@@ -261,7 +287,7 @@ export default function template({items, __v}) {
 <div><%= e %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({avatarTemplate, account}) {
   var __output = [];
@@ -278,7 +304,7 @@ export default function template({avatarTemplate, account}) {
     const t = new Template(`<div><%= ((...args) => { return y(...args); })(z, y) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({y, z}) {
   return [createElement("div", {content: ((...args) => { return y(...args); })(z, y)})];
@@ -290,7 +316,7 @@ export default function template({y, z}) {
     const t = new Template(`<div><%= models.map(m => m.name) %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({models}) {
   return [createElement("div", {content: models.map(m => m.name)})];
@@ -304,7 +330,7 @@ export default function template({models}) {
     );
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({el}) {
   return ["Hello ", el(() => { var x = 2; let y = 3; const z = 4; return 5; })];
@@ -318,7 +344,7 @@ describe('syntax', () => {
     const t = new Template(`<div><%# comment %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("div")];
@@ -330,7 +356,7 @@ export default function template() {
     const t = new Template('Hello <%# name %>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return ["Hello "];
@@ -342,7 +368,7 @@ export default function template() {
     const t = new Template('Hello <%# a\n    multi\n    line\n    comment\n%>');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return ["Hello "];
@@ -354,7 +380,7 @@ export default function template() {
     const t = new Template('Hello <!-- Write your comments here -->');
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return ["Hello "];
@@ -366,7 +392,7 @@ export default function template() {
     const t = new Template(`<div><% if(show) { %>visible<% } %></div>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({show}) {
   var __a = [];
@@ -395,7 +421,7 @@ describe('complex uses', () => {
 </form>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("form", {"class": "uniformForm", content: ["\\n", createElement("div", {"class": "form-group", content: ["\\n", createElement("div", {"class": "uniformFloatingLabel", content: ["\\n", createElement("label", {"for": "email_address", content: "Email Address"}), "\\n", createElement("input", {"type": "text", "class": "pad-2x width-100-p", "name": "email_address", "value": "", "id": "email_address", "autofocus": true}), "\\n"]}), "\\n"]}), "\\n", createElement("div", {"class": "margin-v text-small text-center", content: ["\\n", createElement("button", {"class": "reset js-reset-password text-gray-dark hover-blue", content: "Forgot Password?"}), "\\n"]}), "\\n"]})];
@@ -410,7 +436,7 @@ export default function template() {
 </svg>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template() {
   return [createElement("svg", {"xmlns": "http://www.w3.org/2000/svg", "width": "526", "height": "233", content: ["\\n", createElement("rect", {"x": "13", "y": "14", "width": "500", "height": "200", "rx": "50", "ry": "100", "fill": "none", "stroke": "blue", "stroke-width": "10"}), "\\n"]})];
@@ -426,7 +452,7 @@ export default function template() {
 <% }) %>`);
     const result = t.toModule('template');
 
-    assert.equal(result, `import { createElement } from 'dolla';
+    assert.equal(result, `import createElement from 'dolla/createElement';
 
 export default function template({records}) {
   var __output = [];

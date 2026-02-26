@@ -33,9 +33,9 @@ export class HtmlTag {
 
     if (this.children.length === 0) {
       if (attrParts.length > 0) {
-        return `createElement(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
+        return `${varGen.createElement}(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
       }
-      return `createElement(${JSON.stringify(this.name)})`;
+      return `${varGen.createElement}(${JSON.stringify(this.name)})`;
     }
 
     if (this.hasBlocks()) {
@@ -68,7 +68,7 @@ export class HtmlTag {
         }
       }
       attrParts.push(`content: ${acc}`);
-      const createExpr = `createElement(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
+      const createExpr = `${varGen.createElement}(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
       return { lines, expr: createExpr };
     }
 
@@ -96,8 +96,8 @@ export class HtmlTag {
     }
 
     if (attrParts.length > 0) {
-      return `createElement(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
+      return `${varGen.createElement}(${JSON.stringify(this.name)}, {${attrParts.join(', ')}})`;
     }
-    return `createElement(${JSON.stringify(this.name)})`;
+    return `${varGen.createElement}(${JSON.stringify(this.name)})`;
   }
 }

@@ -34,6 +34,7 @@ export class Template {
     this.closeTag = close;
     this.declaredIdentifiers = new Set();
     this.usedIdentifiers = new Set();
+    this.imports = [];
     this.parse();
   }
 
@@ -269,6 +270,23 @@ export class Template {
     code = code.trim();
     if (!code) return;
 
+    // Detect import statements — hoist to module level
+    if (!modifier && /^\s*import\s/.test(code)) {
+      this.imports.push(code.endsWith(';') ? code : code + ';');
+      // Track imported names as declared so they're not free variables
+      const namedMatch = code.match(/import\s+\{([^}]+)\}\s+from/);
+      if (namedMatch) {
+        for (const name of namedMatch[1].split(',')) {
+          this.declaredIdentifiers.add(name.trim());
+        }
+      }
+      const defaultMatch = code.match(/^import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s+from/);
+      if (defaultMatch) {
+        this.declaredIdentifiers.add(defaultMatch[1]);
+      }
+      return;
+    }
+
     // Strip trailing semicolons from output expressions (like ejx does)
     if ((modifier === 'escape' || modifier === 'unescape') && /;\s*$/.test(code)) {
       code = code.replace(/;\s*$/, '');
@@ -495,12 +513,32 @@ export class Template {
     // Remove generated internal variables (__output, __promises, etc)
     free.delete('__output');
     free.delete('__promises');
-    free.delete('createElement');
+    free.delete('__createElement');
     return free;
+  }
+
+  _createElementName() {
+    const hasDollaImport = this.imports.some(imp => /dolla\/createElement/.test(imp));
+    if (hasDollaImport) return 'createElement';
+    const hasConflict = this.imports.some(imp => /\bcreateElement\b/.test(imp));
+    return hasConflict ? '__createElement' : 'createElement';
+  }
+
+  _buildImportLines(createElementName) {
+    const hasDollaImport = this.imports.some(imp => /dolla\/createElement/.test(imp));
+    const lines = [];
+    if (!hasDollaImport) {
+      lines.push(`import ${createElementName} from 'dolla/createElement';`);
+    }
+    for (const imp of this.imports) {
+      lines.push(imp);
+    }
+    return lines;
   }
 
   toModule(functionName = 'template') {
     const varGen = new VarGenerator();
+    varGen.createElement = this._createElementName();
     const children = this.tree[0];
 
     // Check if we have any block constructs at root level
@@ -551,7 +589,7 @@ export class Template {
     const free = this.freeVariables();
     const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
-    const lines = [`import { createElement } from 'dolla';`, ''];
+    const lines = [...this._buildImportLines(varGen.createElement), ''];
     lines.push(`export default function ${functionName}(${params}) {`);
 
     for (const s of statements) {
@@ -574,7 +612,7 @@ export class Template {
     const free = this.freeVariables();
     const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
-    const lines = [`import { createElement } from 'dolla';`, ''];
+    const lines = [...this._buildImportLines(varGen.createElement), ''];
     lines.push(`export default function ${functionName}(${params}) {`);
 
     const returnValues = [];
@@ -623,7 +661,7 @@ export class Template {
     const free = this.freeVariables();
     const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
-    const lines = [`import { createElement } from 'dolla';`, ''];
+    const lines = [...this._buildImportLines(varGen.createElement), ''];
     lines.push(`export default function ${functionName}(${params}) {`);
     lines.push('  var __output = [];');
 

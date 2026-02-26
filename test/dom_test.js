@@ -2,11 +2,11 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Template } from '../src/template.js';
 
-const dollaUrl = import.meta.resolve('dolla');
-
 async function compile(source, opts) {
   const t = new Template(source, opts);
-  const code = t.toModule('template').replace("'dolla'", `'${dollaUrl}'`);
+  const code = t.toModule('template').replace(/'dolla(\/[^']*)?'/g, (m, sub) => {
+    return `'${import.meta.resolve('dolla' + (sub || ''))}'`;
+  });
   const url = `data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`;
   const mod = await import(url);
   return mod.default;
@@ -64,6 +64,13 @@ describe('parser', () => {
       { open: '[[', close: ']]' }
     );
     assertHTML(fn(), '<div><span>Hello World</span></div>');
+  });
+
+  test('imports listenerElement from dolla', async () => {
+    const fn = await compile(
+      `<% import listenerElement from 'dolla/listenerElement' %><%= listenerElement('div', {content: 'hello'}, 'click', handler) %>`
+    );
+    assertHTML(fn({handler: () => {}}), '<div>hello</div>');
   });
 });
 
