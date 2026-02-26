@@ -5,17 +5,25 @@
   "type": "module",
   "description": "esbuild plugin to compile .ejs templates into JS modules",
   "main": "src/index.js",
-  "files": ["src"],
-  "keywords": ["esbuild", "plugin", "ejs", "template"],
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "esbuild",
+    "plugin",
+    "ejs",
+    "template"
+  ],
   "author": "Ben Ehmke",
   "license": "MIT",
   "dependencies": {
     "dolla": "^1.5.7"
   },
   "devDependencies": {
-    "esbuild": "^0.23.0"
+    "esbuild": "^0.23.0",
+    "linkedom": "^0.18.12"
   },
   "scripts": {
-    "test": "node --test test/test.js"
+    "test": "node --import ./test/setup.js --test test/compilation_test.js test/dom_test.js test/integration_test.js"
   }
 }

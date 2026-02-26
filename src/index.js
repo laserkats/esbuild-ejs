@@ -1,7 +1,6 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { parse } from './parser.js';
-import { compile } from './compiler.js';
+import { Template } from './template.js';
 
 function toValidIdentifier(name) {
   let id = name.replace(/\.html$/i, '').replace(/[^A-Za-z0-9_$]/g, '_');
@@ -20,8 +19,8 @@ export default function ejsPlugin(options = {}) {
         const base = path.basename(args.path, '.ejs');
         const fnName = toValidIdentifier(base);
 
-        const results = parse(source, { open, close });
-        const contents = compile(results, fnName);
+        const template = new Template(source, { open, close });
+        const contents = template.toModule(fnName);
 
         return { contents, loader: 'js' };
       });
