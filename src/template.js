@@ -292,6 +292,20 @@ export class Template {
       code = code.replace(/;\s*$/, '');
     }
 
+    // Detect `<%= const/let/var name = expr %>` — split into declaration + output
+    if (modifier === 'escape' || modifier === 'unescape') {
+      const declMatch = code.match(/^((?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*.+)$/);
+      if (declMatch) {
+        const declNode = new JsNode(declMatch[1], null);
+        this.pushToTree(declNode);
+        this.trackIdentifiers(declMatch[1], null);
+        const outputNode = new JsNode(declMatch[2], modifier);
+        this.pushToTree(outputNode);
+        this.trackIdentifiers(declMatch[2], modifier);
+        return;
+      }
+    }
+
     // Check if current tree top is a Subtemplate and this code closes it
     const treeCurrent = this.currentNode();
     if (treeCurrent instanceof Subtemplate && !modifier) {

@@ -291,6 +291,11 @@ describe('output mode', () => {
     const result = fn({promise: await Promise.resolve(inner.outerHTML)});
     assertHTML(result, '<div><span>hello</span></div>');
   });
+
+  test('assigns variable and outputs value with <%= const %>', async () => {
+    const fn = await compile(`<div><%= const foo = 'hello' %> <%= foo %></div>`);
+    assertHTML(fn(), '<div>hello hello</div>');
+  });
 });
 
 describe('attribute interpolation', () => {

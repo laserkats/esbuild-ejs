@@ -11,7 +11,10 @@ export class HtmlTag {
   push(...values) { this.children.push(...values); return this; }
 
   hasBlocks() {
-    return this.children.some(c => c instanceof Subtemplate);
+    return this.children.some(c =>
+      c instanceof Subtemplate ||
+      (c.modifier === null && c.value !== undefined)
+    );
   }
 
   toJS(varGen) {
