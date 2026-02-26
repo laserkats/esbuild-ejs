@@ -5,7 +5,7 @@ import { Template } from '../src/template.js';
 async function compile(source, opts) {
   const t = new Template(source, opts);
   const code = t.toModule('template').replace(/'dolla(\/[^']*)?'/g, (m, sub) => {
-    return `'${import.meta.resolve('dolla' + (sub || ''))}'`;
+    return `'` + import.meta.resolve('dolla' + (sub || '')) + `'`;
   });
   const url = `data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`;
   const mod = await import(url);
@@ -276,6 +276,20 @@ describe('output mode', () => {
     const fn = await compile(`<%= '<div>t1</div>' %>
 <%- '<div>t2</div>' %>`);
     assert.deepStrictEqual(fn(), ['<div>t1</div>', '<div>t2</div>']);
+  });
+
+  test('outputs a Promise that resolves to a value', async () => {
+    const fn = await compile(`<%= promise %>`);
+    const result = fn({promise: Promise.resolve('async value')});
+    assert.equal(await result[0], 'async value');
+  });
+
+  test('outputs a Promise that resolves to HTML inside an element', async () => {
+    const fn = await compile(`<div><%= promise %></div>`);
+    const fn2 = await compile(`<span><%= foo %></span>`);
+    const inner = fn2({foo: 'hello'})[0];
+    const result = fn({promise: await Promise.resolve(inner.outerHTML)});
+    assertHTML(result, '<div><span>hello</span></div>');
   });
 });
 
