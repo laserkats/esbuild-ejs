@@ -72,6 +72,23 @@ describe('parser', () => {
     );
     assertHTML(fn({handler: () => {}}), '<div>hello</div>');
   });
+
+  test('listenerElement with content callback subtemplate', async () => {
+    const fn = await compile(
+      `<% import { listenerElement } from 'dolla'; %>
+<div class="">
+    <div class="">
+        <%= listenerElement('form', {
+            content: () => { %>
+                <div>Hello World</div>
+        <% }}, 'submit', async (e) => {
+            e.preventDefault();
+        }) %>
+    </div>
+</div>`
+    );
+    assertHTML(fn(), '<div>\n    <div>\n        <form>                <div>Hello World</div>\n        </form>    </div>\n</div>');
+  });
 });
 
 describe('iterators', () => {

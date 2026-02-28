@@ -42,7 +42,7 @@ export class Subtemplate {
 
     if (this.modifier) {
       childAcc = varGen.next();
-      lines.push(`${accumulator}.push(...${this.opening}`);
+      lines.push(`${accumulator}.push(...[].concat(${this.opening}`);
       lines.push(`  var ${childAcc} = [];`);
     } else if (funcDecl) {
       childAcc = varGen.next();
@@ -88,7 +88,7 @@ export class Subtemplate {
 
     if (this.modifier) {
       lines.push(`  return ${childAcc};`);
-      lines.push(`${this.closing || this.endingBalance()}.flat());`);
+      lines.push(`${this.closing || this.endingBalance()}).flat());`);
     } else if (funcDecl) {
       lines.push(`  return ${childAcc}.filter(x => typeof x !== "string" || x.trim());`);
       lines.push(this.closing || this.endingBalance());

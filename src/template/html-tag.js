@@ -13,7 +13,8 @@ export class HtmlTag {
   hasBlocks() {
     return this.children.some(c =>
       c instanceof Subtemplate ||
-      (c.modifier === null && c.value !== undefined)
+      (c.modifier === null && c.value !== undefined) ||
+      (c instanceof HtmlTag && c.hasBlocks())
     );
   }
 
@@ -63,7 +64,14 @@ export class HtmlTag {
             lines.push(`// ${child.value}`);
           } else if (child.name) {
             // HtmlTag
-            lines.push(`${acc}.push(${js});`);
+            if (typeof js === 'object' && js.lines) {
+              for (const l of js.lines) {
+                lines.push(`  ${l}`);
+              }
+              lines.push(`  ${acc}.push(${js.expr});`);
+            } else {
+              lines.push(`  ${acc}.push(${js});`);
+            }
           } else {
             // plain scriptlet
             lines.push(js);
