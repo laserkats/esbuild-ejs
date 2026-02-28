@@ -1,3 +1,4 @@
+import globals from 'globals';
 import { StringNode } from './template/string.js';
 import { JsNode } from './template/js.js';
 import { HtmlTag } from './template/html-tag.js';
@@ -19,11 +20,21 @@ const JS_KEYWORDS = new Set([
 ]);
 
 const JS_BUILTINS = new Set([
-  'console', 'Math', 'JSON', 'Date', 'Array', 'Object', 'String', 'Number',
-  'Boolean', 'RegExp', 'Error', 'Map', 'Set', 'Promise', 'Symbol',
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent',
-  'decodeURIComponent', 'encodeURI', 'decodeURI', 'setTimeout', 'setInterval',
-  'clearTimeout', 'clearInterval', 'globalThis', 'window', 'document',
+  // All ES language builtins (Array, Object, Promise, Math, JSON, etc.)
+  ...Object.keys(globals.es2025),
+  // All uppercase browser globals (constructors, classes, namespaces)
+  ...Object.keys(globals.browser).filter(k => /^[A-Z]/.test(k)),
+  // Curated lowercase browser globals that are clearly APIs, not variable names
+  'console', 'fetch', 'alert', 'confirm', 'prompt',
+  'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
+  'requestAnimationFrame', 'cancelAnimationFrame',
+  'requestIdleCallback', 'cancelIdleCallback',
+  'queueMicrotask', 'structuredClone', 'reportError',
+  'atob', 'btoa', 'createImageBitmap',
+  'addEventListener', 'removeEventListener', 'dispatchEvent',
+  'getComputedStyle', 'getSelection', 'matchMedia',
+  'globalThis', 'window', 'document', 'navigator', 'localStorage', 'sessionStorage',
+  'indexedDB', 'crypto', 'performance', 'caches',
 ]);
 
 export class Template {

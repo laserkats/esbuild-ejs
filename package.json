@@ -16,7 +16,8 @@
   "author": "Ben Ehmke",
   "license": "MIT",
   "dependencies": {
-    "dolla": "^1.5.7"
+    "dolla": "^1.5.7",
+    "globals": "^17.3.0"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",
