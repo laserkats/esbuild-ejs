@@ -233,6 +233,16 @@ npm install
 npm test
 ```
 
+### Compiling a single template
+
+To quickly inspect the compiled output of a template:
+
+```sh
+npm run compile -- path/to/template.html.ejs
+```
+
+This writes the compiled JS module next to the source file (e.g., `template.html.js`) and prints the output path. Files with an `.ejx` extension automatically use `[[ ]]` delimiters.
+
 ### Project structure
 
 ```

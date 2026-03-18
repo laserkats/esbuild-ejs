@@ -24,6 +24,7 @@
     "linkedom": "^0.18.12"
   },
   "scripts": {
-    "test": "node --import ./test/setup.js --test test/compilation_test.js test/dom_test.js test/integration_test.js"
+    "test": "node --import ./test/setup.js --test test/compilation_test.js test/dom_test.js test/integration_test.js",
+    "compile": "node src/compile.js"
   }
 }
