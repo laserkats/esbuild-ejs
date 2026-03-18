@@ -275,6 +275,30 @@ describe('subtemplates', () => {
       '<input type="text"><input type="submit">');
   });
 
+  test('declared variable in subtemplate is not extracted as parameter', async () => {
+    const fn = await compile(
+      `[[ const body = wrapper(content); ]]
+[[ tabs.forEach(tab => { ]]
+    [[= renderTab(tab.label, () => {
+        body.update(tab.template());
+    }) ]]
+[[ }); ]]`,
+      { open: '[[', close: ']]' }
+    );
+    const calls = [];
+    const result = fn({
+      wrapper: (c) => ({ update(v) { calls.push(v); } }),
+      content: 'initial',
+      tabs: [
+        { label: 'Tab1', template: () => 'content1' },
+        { label: 'Tab2', template: () => 'content2' },
+      ],
+      renderTab: (label, onClick) => { onClick(); return label; },
+    });
+    assert.deepStrictEqual(result, ['Tab1', 'Tab2']);
+    assert.deepStrictEqual(calls, ['content1', 'content2']);
+  });
+
   test('nested callback subtemplates', async () => {
     const fn = await compile(`<% outer(a => { %>
 <% inner(b => { %>
@@ -312,6 +336,36 @@ describe('output mode', () => {
   test('assigns variable and outputs value with <%= const %>', async () => {
     const fn = await compile(`<div><%= const foo = 'hello' %> <%= foo %></div>`);
     assertHTML(fn(), '<div>hello hello</div>');
+  });
+
+  test('assigns variable and outputs value inside a subtemplate', async () => {
+    const fn = await compile(`<% function render() { %>
+<div><%= const foo = 'world' %> <%= foo %></div>
+<% } %>
+<%= render() %>`);
+    assertHTML(fn(), '<div>world world</div>');
+  });
+
+  test('multi-line assign-and-output inside a callback subtemplate', async () => {
+    const fn = await compile(`<% wrapper(() => { %>
+<%= const el = make('span', {
+    content: 'hello'
+}, 'click', () => {
+    el.update();
+}); %>
+<%= el %>
+<% }) %>`);
+    let captured;
+    const result = fn({
+      wrapper: (cb) => { cb(); },
+      make: (tag, opts, event, handler) => {
+        captured = { tag, content: opts.content, event };
+        return opts.content;
+      },
+    });
+    assert.equal(captured.tag, 'span');
+    assert.equal(captured.content, 'hello');
+    assert.deepStrictEqual(result, ['hello', 'hello']);
   });
 });
 

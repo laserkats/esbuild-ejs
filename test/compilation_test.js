@@ -324,6 +324,30 @@ export default function template({models}) {
 `);
   });
 
+  test('excludes multiple const declarations in one block from parameters', () => {
+    const t = new Template(
+      `[[
+const locals = { library };
+const body = State(locals);
+const activeTab = State('a');
+const tabs = [{ template: foo }];
+]]
+[[ tabs.forEach(tab => { ]]
+    [[= body ]]
+[[ }); ]]`,
+      { open: '[[', close: ']]' }
+    );
+    const result = t.toModule('template');
+
+    const paramMatch = result.match(/function template\((\{[^}]+\})\)/);
+    assert.ok(paramMatch, 'should have destructured parameters');
+    const params = paramMatch[1];
+    assert.ok(!params.includes('locals'), 'locals should not appear in parameters');
+    assert.ok(!params.includes('body'), 'body should not appear in parameters');
+    assert.ok(!params.includes('activeTab'), 'activeTab should not appear in parameters');
+    assert.ok(!params.includes('tabs'), 'tabs should not appear in parameters');
+  });
+
   test('does not treat var/let/const inside function body as declarations', () => {
     const t = new Template(
       'Hello <%= el(() => { var x = 2; let y = 3; const z = 4; return 5; }) %>'

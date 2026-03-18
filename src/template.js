@@ -187,8 +187,9 @@ export class Template {
     const classMatch = code.match(/^\s*class\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
     if (classMatch) this.declaredIdentifiers.add(classMatch[1]);
 
-    const varMatch = code.match(/^\s*(?:var|let|const)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
-    if (varMatch) this.declaredIdentifiers.add(varMatch[1]);
+    for (const varMatch of code.matchAll(/(?:^|;|\n)\s*(?:var|let|const)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g)) {
+      this.declaredIdentifiers.add(varMatch[1]);
+    }
 
     const catchMatch = code.match(/catch\s*\(([a-zA-Z_$][a-zA-Z0-9_$]*)\)/);
     if (catchMatch) this.declaredIdentifiers.add(catchMatch[1]);
@@ -305,7 +306,7 @@ export class Template {
 
     // Detect `<%= const/let/var name = expr %>` — split into declaration + output
     if (modifier === 'escape' || modifier === 'unescape') {
-      const declMatch = code.match(/^((?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*.+)$/);
+      const declMatch = code.match(/^((?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*.+)$/s);
       if (declMatch) {
         const declNode = new JsNode(declMatch[1], null);
         this.pushToTree(declNode);
