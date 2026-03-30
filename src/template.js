@@ -181,7 +181,7 @@ export class Template {
     }
 
     // Track declarations: function name, class name, var/let/const names
-    const funcMatch = code.match(/^\s*function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
+    const funcMatch = code.match(/(?:^|;|\n)\s*(?:async\s+)?function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
     if (funcMatch) this.declaredIdentifiers.add(funcMatch[1]);
 
     const classMatch = code.match(/^\s*class\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/);
@@ -540,6 +540,10 @@ export class Template {
     free.delete('__output');
     free.delete('__promises');
     free.delete('__createElement');
+    // "locals" is the function parameter name — not a free variable,
+    // but track whether it was referenced so we still emit the param
+    this.usesLocals = free.has('locals');
+    free.delete('locals');
     return free;
   }
 
@@ -613,10 +617,16 @@ export class Template {
     }
 
     const free = this.freeVariables();
-    const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    lines.push(`export default function ${functionName}(${params}) {`);
+    if (free.size > 0 || this.usesLocals) {
+      lines.push(`export default function ${functionName}(locals={}) {`);
+      if (free.size > 0) {
+        lines.push(`  let {${[...free].join(', ')}} = locals;`);
+      }
+    } else {
+      lines.push(`export default function ${functionName}() {`);
+    }
 
     for (const s of statements) {
       lines.push(`  ${s}`);
@@ -636,10 +646,16 @@ export class Template {
     // Re-do with fresh varGen since we need accumulator mode
     const freshVarGen = new VarGenerator();
     const free = this.freeVariables();
-    const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    lines.push(`export default function ${functionName}(${params}) {`);
+    if (free.size > 0 || this.usesLocals) {
+      lines.push(`export default function ${functionName}(locals={}) {`);
+      if (free.size > 0) {
+        lines.push(`  let {${[...free].join(', ')}} = locals;`);
+      }
+    } else {
+      lines.push(`export default function ${functionName}() {`);
+    }
 
     const returnValues = [];
     const bodyLines = [];
@@ -685,10 +701,16 @@ export class Template {
 
   _toModuleWithBlocks(children, functionName, varGen) {
     const free = this.freeVariables();
-    const params = free.size > 0 ? `{${[...free].join(', ')}}` : '';
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    lines.push(`export default function ${functionName}(${params}) {`);
+    if (free.size > 0 || this.usesLocals) {
+      lines.push(`export default function ${functionName}(locals={}) {`);
+      if (free.size > 0) {
+        lines.push(`  let {${[...free].join(', ')}} = locals;`);
+      }
+    } else {
+      lines.push(`export default function ${functionName}() {`);
+    }
     lines.push('  var __output = [];');
 
     for (const child of children) {

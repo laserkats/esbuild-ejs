@@ -69,7 +69,8 @@ export default function template() {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({name}) {
+export default function template(locals={}) {
+  let {name} = locals;
   return ["Hello ", name];
 }
 `);
@@ -81,7 +82,8 @@ export default function template({name}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({name}) {
+export default function template(locals={}) {
+  let {name} = locals;
   return ["Hello ", {foo: 'test'}[name]];
 }
 `);
@@ -95,7 +97,8 @@ export default function template({name}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({name}) {
+export default function template(locals={}) {
+  let {name} = locals;
   return ["Hello ", Array.from([name]).forEach(async (clause_code, index) => { return clause_code })];
 }
 `);
@@ -131,7 +134,8 @@ export default function template() {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({x}) {
+export default function template(locals={}) {
+  let {x} = locals;
   return ["Hello ", x()];
 }
 `);
@@ -144,7 +148,8 @@ export default function template({x}) {
     assert.equal(result, `import createElement from 'dolla/createElement';
 import { listenerElement } from 'dolla';
 
-export default function template({name, handler}) {
+export default function template(locals={}) {
+  let {name, handler} = locals;
   return [createElement("div", {content: listenerElement('div', {content: name}, 'click', handler)})];
 }
 `);
@@ -171,7 +176,8 @@ describe('parameter extraction', () => {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({name, greeting}) {
+export default function template(locals={}) {
+  let {name, greeting} = locals;
   return [createElement("div", {content: [createElement("span", {content: name}), createElement("span", {content: greeting})]})];
 }
 `);
@@ -195,7 +201,8 @@ export default function template() {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({user}) {
+export default function template(locals={}) {
+  let {user} = locals;
   return [createElement("div", {content: user.name})];
 }
 `);
@@ -207,7 +214,8 @@ export default function template({user}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({foo}) {
+export default function template(locals={}) {
+  let {foo} = locals;
   return [createElement("div", {content: [foo, foo]})];
 }
 `);
@@ -219,7 +227,8 @@ export default function template({foo}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({transparent, klass}) {
+export default function template(locals={}) {
+  let {transparent, klass} = locals;
   return [createElement("div", {content: typeof transparent != "undefined" ? klass : ''})];
 }
 `);
@@ -231,8 +240,21 @@ export default function template({transparent, klass}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({avatarTemplate, account}) {
+export default function template(locals={}) {
+  let {avatarTemplate, account} = locals;
   return [createElement("div", {content: avatarTemplate({ account: account })})];
+}
+`);
+  });
+
+  test('does not extract "locals" as a free variable', () => {
+    const t = new Template(`<div><%= locals.name %></div>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template(locals={}) {
+  return [createElement("div", {content: locals.name})];
 }
 `);
   });
@@ -243,7 +265,8 @@ export default function template({avatarTemplate, account}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({fn, value}) {
+export default function template(locals={}) {
+  let {fn, value} = locals;
   return [createElement("div", {content: fn({ key: value })})];
 }
 `);
@@ -260,7 +283,8 @@ describe('scoping', () => {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({models, avatarTemplate, files}) {
+export default function template(locals={}) {
+  let {models, avatarTemplate, files} = locals;
   function x(files) { return files.test(); }
   class B {}
   return [createElement("div", {content: models.map(m => m.name)}), createElement("div", {content: avatarTemplate({ account: x(files), klass: B })})];
@@ -275,7 +299,8 @@ export default function template({models, avatarTemplate, files}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({items, __v}) {
+export default function template(locals={}) {
+  let {items, __v} = locals;
   function f(items, template) { return items.map((file) => { const row = template(file); return row; }); }
   return [createElement("div", {content: f(items, (f) => { return __v; })})];
 }
@@ -289,7 +314,8 @@ export default function template({items, __v}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({avatarTemplate, account}) {
+export default function template(locals={}) {
+  let {avatarTemplate, account} = locals;
   var __output = [];
   try {
     __output.push(...[].concat(avatarTemplate({ account: account })));
@@ -306,7 +332,8 @@ export default function template({avatarTemplate, account}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({y, z}) {
+export default function template(locals={}) {
+  let {y, z} = locals;
   return [createElement("div", {content: ((...args) => { return y(...args); })(z, y)})];
 }
 `);
@@ -318,7 +345,8 @@ export default function template({y, z}) {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({models}) {
+export default function template(locals={}) {
+  let {models} = locals;
   return [createElement("div", {content: models.map(m => m.name)})];
 }
 `);
@@ -339,13 +367,43 @@ const tabs = [{ template: foo }];
     );
     const result = t.toModule('template');
 
-    const paramMatch = result.match(/function template\((\{[^}]+\})\)/);
+    const paramMatch = result.match(/let \{([^}]+)\} = locals/);
     assert.ok(paramMatch, 'should have destructured parameters');
     const params = paramMatch[1];
     assert.ok(!params.includes('locals'), 'locals should not appear in parameters');
     assert.ok(!params.includes('body'), 'body should not appear in parameters');
     assert.ok(!params.includes('activeTab'), 'activeTab should not appear in parameters');
     assert.ok(!params.includes('tabs'), 'tabs should not appear in parameters');
+  });
+
+  test('excludes function declaration name inside multi-statement scriptlet from free variables', () => {
+    const t = new Template(
+`<div>
+    <%
+    let x;
+    function handleAdd() {
+}
+%>
+</div>`);
+    const free = t.freeVariables();
+    assert.ok(!free.has('x'), 'x should not be a free variable');
+    assert.ok(!free.has('handleAdd'), 'handleAdd should not be a free variable');
+  });
+
+  test('excludes async function declaration name inside multi-statement scriptlet from free variables', () => {
+    const t = new Template(
+`<div class="mt-6 border-t pt-4">
+    <h3 class="text-sm font-medium text-gray-700 mb-2">Bulk Add Attributes</h3>
+    <p class="text-xs text-gray-500 mb-2">Enter attribute names separated by tabs or commas</p>
+    <%
+    let bulkTextarea;
+    async function handleBulkAdd() {
+}
+%>
+</div>`);
+    const free = t.freeVariables();
+    assert.ok(!free.has('bulkTextarea'), 'bulkTextarea should not be a free variable');
+    assert.ok(!free.has('handleBulkAdd'), 'handleBulkAdd should not be a free variable');
   });
 
   test('does not treat var/let/const inside function body as declarations', () => {
@@ -356,7 +414,8 @@ const tabs = [{ template: foo }];
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({el}) {
+export default function template(locals={}) {
+  let {el} = locals;
   return ["Hello ", el(() => { var x = 2; let y = 3; const z = 4; return 5; })];
 }
 `);
@@ -418,7 +477,8 @@ export default function template() {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({show}) {
+export default function template(locals={}) {
+  let {show} = locals;
   var __a = [];
   if(show) {
     __a.push("visible");
@@ -478,7 +538,8 @@ export default function template() {
 
     assert.equal(result, `import createElement from 'dolla/createElement';
 
-export default function template({records}) {
+export default function template(locals={}) {
+  let {records} = locals;
   var __output = [];
   records.forEach((record) => {
     __output.push(createElement("input", {"type": "text"}));
