@@ -547,11 +547,27 @@ export class Template {
     return free;
   }
 
+  hasTopLevelAwait() {
+    const children = this.tree[0];
+    for (const child of children) {
+      if (child instanceof JsNode && child.modifier !== 'comment') {
+        if (/\bawait\b/.test(child.value)) return true;
+      }
+    }
+    return false;
+  }
+
   _createElementName() {
     const hasDollaImport = this.imports.some(imp => /dolla\/createElement/.test(imp));
     if (hasDollaImport) return 'createElement';
     const hasConflict = this.imports.some(imp => /\bcreateElement\b/.test(imp));
     return hasConflict ? '__createElement' : 'createElement';
+  }
+
+  _functionDecl(functionName, hasParams) {
+    const async = this.hasTopLevelAwait() ? 'async ' : '';
+    const params = hasParams ? 'locals={}' : '';
+    return `export default ${async}function ${functionName}(${params}) {`;
   }
 
   _buildImportLines(createElementName) {
@@ -619,13 +635,10 @@ export class Template {
     const free = this.freeVariables();
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    if (free.size > 0 || this.usesLocals) {
-      lines.push(`export default function ${functionName}(locals={}) {`);
-      if (free.size > 0) {
-        lines.push(`  let {${[...free].join(', ')}} = locals;`);
-      }
-    } else {
-      lines.push(`export default function ${functionName}() {`);
+    const hasParams = free.size > 0 || this.usesLocals;
+    lines.push(this._functionDecl(functionName, hasParams));
+    if (free.size > 0) {
+      lines.push(`  let {${[...free].join(', ')}} = locals;`);
     }
 
     for (const s of statements) {
@@ -648,13 +661,10 @@ export class Template {
     const free = this.freeVariables();
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    if (free.size > 0 || this.usesLocals) {
-      lines.push(`export default function ${functionName}(locals={}) {`);
-      if (free.size > 0) {
-        lines.push(`  let {${[...free].join(', ')}} = locals;`);
-      }
-    } else {
-      lines.push(`export default function ${functionName}() {`);
+    const hasParams = free.size > 0 || this.usesLocals;
+    lines.push(this._functionDecl(functionName, hasParams));
+    if (free.size > 0) {
+      lines.push(`  let {${[...free].join(', ')}} = locals;`);
     }
 
     const returnValues = [];
@@ -703,13 +713,10 @@ export class Template {
     const free = this.freeVariables();
 
     const lines = [...this._buildImportLines(varGen.createElement), ''];
-    if (free.size > 0 || this.usesLocals) {
-      lines.push(`export default function ${functionName}(locals={}) {`);
-      if (free.size > 0) {
-        lines.push(`  let {${[...free].join(', ')}} = locals;`);
-      }
-    } else {
-      lines.push(`export default function ${functionName}() {`);
+    const hasParams = free.size > 0 || this.usesLocals;
+    lines.push(this._functionDecl(functionName, hasParams));
+    if (free.size > 0) {
+      lines.push(`  let {${[...free].join(', ')}} = locals;`);
     }
     lines.push('  var __output = [];');
 

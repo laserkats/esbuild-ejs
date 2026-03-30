@@ -489,6 +489,35 @@ export default function template(locals={}) {
   });
 });
 
+describe('async', () => {
+  test('emits async function when template uses top-level await', () => {
+    const t = new Template(
+`<% import someLibrary from 'some_package' %>
+<% const players = Player.load %>
+<% const teams = await players.map(p => p.team) %>
+
+<% teams.forEach(t => { %>
+<%= team.name %>
+<% }) %>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+import someLibrary from 'some_package';
+
+export default async function template(locals={}) {
+  let {Player, team} = locals;
+  var __output = [];
+  const players = Player.load
+  const teams = await players.map(p => p.team)
+  teams.forEach(t => {
+    __output.push(...[].concat(team.name));
+  })
+  return __output.filter(x => typeof x !== "string" || x.trim());
+}
+`);
+  });
+});
+
 describe('complex uses', () => {
   test('compiles deeply nested HTML form', () => {
     const t = new Template(
