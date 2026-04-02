@@ -489,6 +489,33 @@ export default function template(locals={}) {
   });
 });
 
+describe('IIFE arrow function declaration', () => {
+  test('compiles <%= const name = () => { %> ... <% }() %> as IIFE subtemplate', () => {
+    const t = new Template(
+`<%= const table = () => { %>
+<div>
+<span>hello world</span>
+</div>
+<% }() %>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template() {
+  var __output = [];
+  const table = (() => {
+    var __a = [];
+    __a.push(createElement("div", {content: ["\\n", createElement("span", {content: "hello world"}), "\\n"]}));
+    __a.push("\\n");
+    return __a.filter(x => typeof x !== "string" || x.trim());
+  })();
+  __output.push(...[].concat(table));
+  return __output.filter(x => typeof x !== "string" || x.trim());
+}
+`);
+  });
+});
+
 describe('async', () => {
   test('emits async function when template uses top-level await', () => {
     const t = new Template(
