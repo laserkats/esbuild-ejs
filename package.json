@@ -1,6 +1,6 @@
 {
   "name": "esbuild-ejs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "esbuild plugin to compile .ejs templates into JS modules",
   "main": "src/index.js",

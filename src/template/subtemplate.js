@@ -38,9 +38,26 @@ export class Subtemplate {
   toJS(accumulator, varGen) {
     const lines = [];
     let childAcc;
-    const funcDecl = !this.modifier && this._isFuncDecl();
+    const isFuncDecl = this._isFuncDecl();
+    const funcDecl = !this.modifier && isFuncDecl;
 
-    if (this.modifier) {
+    if (this.modifier && isFuncDecl) {
+      // Declaration that opens a block and outputs the declared variable
+      // e.g., <%= const table = () => { %>...<% }() %>
+      // Wrap arrow functions for valid IIFE syntax: const x = (() => { ... })()
+      childAcc = varGen.next();
+      const varName = this.opening.match(/(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/)[1];
+      const isArrow = /=>\s*\{\s*$/.test(this.opening);
+      if (isArrow) {
+        // const name = () => {  →  const name = (() => {
+        lines.push(this.opening.replace(/=\s*(.*=>\s*\{)\s*$/, '= ($1'));
+      } else {
+        lines.push(this.opening);
+      }
+      lines.push(`  var ${childAcc} = [];`);
+      this._funcDeclOutputVar = varName;
+      this._isArrowIIFE = isArrow;
+    } else if (this.modifier) {
       childAcc = varGen.next();
       lines.push(`${accumulator}.push(...[].concat(${this.opening}`);
       lines.push(`  var ${childAcc} = [];`);
@@ -86,7 +103,16 @@ export class Subtemplate {
       }
     }
 
-    if (this.modifier) {
+    if (this._funcDeclOutputVar) {
+      lines.push(`  return ${childAcc}.filter(x => typeof x !== "string" || x.trim());`);
+      let closing = this.closing || this.endingBalance();
+      if (this._isArrowIIFE) {
+        // }() → })()  to close the IIFE wrapping parens
+        closing = closing.replace(/^\s*\}/, '})');
+      }
+      lines.push(`${closing};`);
+      lines.push(`${accumulator}.push(...[].concat(${this._funcDeclOutputVar}));`);
+    } else if (this.modifier) {
       lines.push(`  return ${childAcc};`);
       lines.push(`${this.closing || this.endingBalance()}).flat());`);
     } else if (funcDecl) {

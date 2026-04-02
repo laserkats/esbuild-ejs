@@ -305,16 +305,22 @@ export class Template {
     }
 
     // Detect `<%= const/let/var name = expr %>` — split into declaration + output
+    // But skip when the expression has an unbalanced brace (opens a block),
+    // so it falls through to the subtemplate detection below.
     if (modifier === 'escape' || modifier === 'unescape') {
       const declMatch = code.match(/^((?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*.+)$/s);
       if (declMatch) {
-        const declNode = new JsNode(declMatch[1], null);
-        this.pushToTree(declNode);
-        this.trackIdentifiers(declMatch[1], null);
-        const outputNode = new JsNode(declMatch[2], modifier);
-        this.pushToTree(outputNode);
-        this.trackIdentifiers(declMatch[2], modifier);
-        return;
+        const declBalance = balanceScan(declMatch[1]);
+        const hasOpenBrace = declBalance.some(ch => ch === '{');
+        if (!hasOpenBrace) {
+          const declNode = new JsNode(declMatch[1], null);
+          this.pushToTree(declNode);
+          this.trackIdentifiers(declMatch[1], null);
+          const outputNode = new JsNode(declMatch[2], modifier);
+          this.pushToTree(outputNode);
+          this.trackIdentifiers(declMatch[2], modifier);
+          return;
+        }
       }
     }
 
