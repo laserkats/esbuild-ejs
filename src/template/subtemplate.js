@@ -70,6 +70,8 @@ export class Subtemplate {
       lines.push(this.opening);
     }
 
+    this._continuationLines = [];
+
     for (const child of this.children) {
       if (child instanceof Subtemplate) {
         // Subtemplate returns multi-line string; indent each line
@@ -94,8 +96,10 @@ export class Subtemplate {
           lines.push(`  ${childAcc}.push(${js});`);
         }
       } else if (this._isContinuation(child)) {
-        // Continuation line (} else {, } catch {) — same indent as opening
-        lines.push(child.toJS(null));
+        // Continuation line (} else {, } catch {, or just })
+        const line = child.toJS(null);
+        this._continuationLines.push(line);
+        lines.push(line);
       } else {
         // plain scriptlet
         const code = child.toJS ? child.toJS(null) : String(child);
@@ -112,6 +116,12 @@ export class Subtemplate {
       }
       lines.push(`${closing};`);
       lines.push(`${accumulator}.push(...[].concat(${this._funcDeclOutputVar}));`);
+    } else if (this.modifier && this._continuationLines.length > 0) {
+      // When there are continuation closings (e.g. `}` closing an inner callback),
+      // insert the return before them so it's inside the innermost block.
+      const insertIdx = lines.indexOf(this._continuationLines[0]);
+      lines.splice(insertIdx, 0, `  return ${childAcc};`);
+      lines.push(`${this.closing || this.endingBalance()}).flat());`);
     } else if (this.modifier) {
       lines.push(`  return ${childAcc};`);
       lines.push(`${this.closing || this.endingBalance()}).flat());`);

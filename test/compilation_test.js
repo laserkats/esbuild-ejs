@@ -584,6 +584,42 @@ export default function template() {
 `);
   });
 
+  test('compiles output expression with nested callback containing template content', () => {
+    const t = new Template(
+`<%= Form.create(filter, {
+    class: 'w-full mb-4',
+    content: async f => { %>
+        <%= f.text(['params', 'company', 'search'], {
+            placeholder: 'Search companies...',
+            class: 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm'
+        }) %>
+    <% } %>
+<% }) %>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template(locals={}) {
+  let {Form, filter} = locals;
+  var __output = [];
+  __output.push(...[].concat(Form.create(filter, {
+      class: 'w-full mb-4',
+      content: async f => {
+    var __a = [];
+    __a.push("        ");
+    __a.push(...[].concat(f.text(['params', 'company', 'search'], {
+              placeholder: 'Search companies...',
+              class: 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm'
+          })));
+    __a.push("    ");
+    return __a;
+  }
+  })).flat());
+  return __output.filter(x => typeof x !== "string" || x.trim());
+}
+`);
+  });
+
   test('compiles forEach with void HTML elements', () => {
     const t = new Template(
 `<% records.forEach((record) => { %>
