@@ -543,6 +543,24 @@ export default async function template(locals={}) {
 }
 `);
   });
+
+  test('emits async function when await appears inside an HTML tag output expression', () => {
+    const t = new Template(
+`<div class="space-y-2">
+    <p class="text-sm text-gray-500">Pairs flagged as likely duplicates.</p>
+
+    <%= await candidates.length() %>
+</div>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default async function template(locals={}) {
+  let {candidates} = locals;
+  return [createElement("div", {"class": "space-y-2", content: ["\\n    ", createElement("p", {"class": "text-sm text-gray-500", content: "Pairs flagged as likely duplicates."}), "\\n\\n    ", await candidates.length()]})];
+}
+`);
+  });
 });
 
 describe('complex uses', () => {

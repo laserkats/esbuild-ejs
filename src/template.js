@@ -554,13 +554,20 @@ export class Template {
   }
 
   hasTopLevelAwait() {
-    const children = this.tree[0];
-    for (const child of children) {
-      if (child instanceof JsNode && child.modifier !== 'comment') {
-        if (/\bawait\b/.test(child.value)) return true;
+    const walk = (nodes) => {
+      for (const child of nodes) {
+        if (child instanceof JsNode && child.modifier !== 'comment') {
+          if (/\bawait\b/.test(child.value)) return true;
+        } else if (child instanceof HtmlTag) {
+          if (walk(child.children)) return true;
+        } else if (child instanceof Subtemplate) {
+          if (/\bawait\b/.test(child.opening)) return true;
+          if (walk(child.children)) return true;
+        }
       }
-    }
-    return false;
+      return false;
+    };
+    return walk(this.tree[0]);
   }
 
   _createElementName() {
