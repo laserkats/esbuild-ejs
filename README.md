@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/laserkats/esbuild-ejs/master/docs/logo.svg" width="300" alt="ESBUILD-EJS">
+<img src="https://raw.githubusercontent.com/laserkats/esbuild-ejs/master/logo.svg" width="300" alt="ESBUILD-EJS">
 
 An [esbuild](https://esbuild.github.io/) plugin that compiles `.ejs` templates into JavaScript modules. Each template exports a function that returns an array of DOM elements built with [dolla](https://github.com/bemky/dolla)'s `createElement`.
 
