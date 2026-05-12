@@ -97,6 +97,28 @@ describe('iterators', () => {
     assert.deepStrictEqual(fn(), [1, 2]);
   });
 
+  test('forEach over a Set renders each value', async () => {
+    const fn = await compile(`<div>
+<% const foo = new Set(['alpha', 'beta']) %>
+<% foo.forEach(x => { %>
+<span><%= x %></span>
+<% }) %>
+</div>`);
+    assertHTML(fn(),
+      '<div>\n<span>alpha</span>\n<span>beta</span>\n</div>');
+  });
+
+  test('forEach over a Map renders each entry', async () => {
+    const fn = await compile(`<div>
+<% const foo = new Map([['alpha', 'one'], ['beta', 'two']]) %>
+<% foo.forEach((num, phase) => { %>
+<span><%= num %>. <%= phase %></span>
+<% }) %>
+</div>`);
+    assertHTML(fn(),
+      '<div>\n<span>one. alpha</span>\n<span>two. beta</span>\n</div>');
+  });
+
   test('nested forEach builds nested element tree', async () => {
     const fn = await compile(`<table>
 <% rows.forEach((row) => { %>
