@@ -47,7 +47,13 @@ export class Subtemplate {
       // Wrap arrow functions for valid IIFE syntax: const x = (() => { ... })()
       childAcc = varGen.next();
       const varName = this.opening.match(/(?:const|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/)[1];
-      const isArrow = /=>\s*\{\s*$/.test(this.opening);
+      // IIFE wrapping only applies when the assigned value is itself a bare arrow
+      // (e.g. `const x = () => {`), not when the arrow is nested inside a call
+      // expression (e.g. `const x = call({content: () => {`). Detect by checking
+      // that the only unclosed brace in the opening is the arrow body itself.
+      const isArrow = /=>\s*\{\s*$/.test(this.opening)
+        && this.balanceStack.length === 1
+        && this.balanceStack[0] === '{';
       if (isArrow) {
         // const name = () => {  →  const name = (() => {
         lines.push(this.opening.replace(/=\s*(.*=>\s*\{)\s*$/, '= ($1'));
