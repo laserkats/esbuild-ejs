@@ -514,6 +514,39 @@ export default function template() {
 }
 `);
   });
+
+  test('does not IIFE-wrap when the assigned value is a call expression containing a nested arrow', () => {
+    const t = new Template(
+`<%= const mosaic = listenerElement({
+    content: () => {
+        return renderEach(charts, async (chart, index) => { %>
+            <div>hello world</div>
+        <% })
+    }
+}) %>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template(locals={}) {
+  let {listenerElement, renderEach, charts} = locals;
+  var __output = [];
+  const mosaic = listenerElement({
+      content: () => {
+          return renderEach(charts, async (chart, index) => {
+    var __a = [];
+    __a.push("            ");
+    __a.push(createElement("div", {content: "hello world"}));
+    __a.push("\\n        ");
+    return __a.filter(x => typeof x !== "string" || x.trim());
+  })
+      }
+  });
+  __output.push(...[].concat(mosaic));
+  return __output.filter(x => typeof x !== "string" || x.trim());
+}
+`);
+  });
 });
 
 describe('async', () => {
