@@ -547,6 +547,34 @@ export default function template(locals={}) {
 }
 `);
   });
+
+  test('builds a local return value for an arrow property value in a bare statement, instead of appending to the outer accumulator', () => {
+    const t = new Template(
+`<% new Modal({
+    content: () => { %>
+        <div>hello world</div>
+    <% }
+}) %>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template(locals={}) {
+  let {Modal} = locals;
+  var __output = [];
+  new Modal({
+      content: () => {
+    var __a = [];
+    __a.push("        ");
+    __a.push(createElement("div", {content: "hello world"}));
+    __a.push("\\n    ");
+    return __a.filter(x => typeof x !== "string" || x.trim());
+  }
+  })
+  return __output.filter(x => typeof x !== "string" || x.trim());
+}
+`);
+  });
 });
 
 describe('async', () => {
