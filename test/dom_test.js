@@ -89,6 +89,21 @@ describe('parser', () => {
     );
     assertHTML(fn(), '<div>\n    <div>\n        <form>                <div>Hello World</div>\n        </form>    </div>\n</div>');
   });
+
+  test('statement-level call with content callback builds its own return value instead of leaking into outer output', async () => {
+    let captured;
+    const fn = await compile(
+      `<div>
+    <% registerModal({
+        content: () => { %>
+            <span>Hello</span>
+        <% }
+    }) %>
+</div>`
+    );
+    assertHTML(fn({ registerModal: (opts) => { captured = opts; } }), '<div>\n    </div>');
+    assertHTML(captured.content(), '<span>Hello</span>');
+  });
 });
 
 describe('iterators', () => {

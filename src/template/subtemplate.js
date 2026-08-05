@@ -35,11 +35,19 @@ export class Subtemplate {
     return /^\s*(?:function\s+\w|(?:const|let)\s+\w+\s*=)/.test(this.opening);
   }
 
+  // Detect an arrow function passed as an object property value, e.g.
+  // `content: () => {` — a lazy content factory whose body should build and
+  // return its own array, as opposed to a bare callback argument like
+  // `arr.forEach(x => {` which intentionally shares the outer accumulator.
+  _isArrowPropertyValue() {
+    return /[{,]\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*:\s*(?:async\s+)?(?:\([^()]*\)|[a-zA-Z_$][a-zA-Z0-9_$]*)\s*=>\s*\{\s*$/.test(this.opening);
+  }
+
   toJS(accumulator, varGen) {
     const lines = [];
     let childAcc;
     const isFuncDecl = this._isFuncDecl();
-    const funcDecl = !this.modifier && isFuncDecl;
+    const funcDecl = !this.modifier && (isFuncDecl || this._isArrowPropertyValue());
 
     if (this.modifier && isFuncDecl) {
       // Declaration that opens a block and outputs the declared variable
