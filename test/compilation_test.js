@@ -271,6 +271,28 @@ export default function template(locals={}) {
 }
 `);
   });
+
+  test('ignores identifiers inside line comments, including ones with apostrophes', () => {
+    const t = new Template(`<%
+// it doesn't matter
+const q = sel('x'); render(alpha)
+%>`);
+    const free = t.freeVariables();
+
+    assert.deepEqual([...free], ['sel', 'render', 'alpha']);
+  });
+
+  test('does not let a quote inside a line comment swallow real identifiers', () => {
+    const t = new Template(`<% const q = sel('x'); render(alpha) %>`);
+    const baseline = t.freeVariables();
+
+    const commented = new Template(`<%
+// it doesn't matter
+const q = sel('x'); render(alpha)
+%>`);
+
+    assert.deepEqual([...commented.freeVariables()], [...baseline]);
+  });
 });
 
 describe('scoping', () => {
@@ -455,6 +477,31 @@ export default function template() {
 
 export default function template() {
   return ["Hello "];
+}
+`);
+  });
+
+  test('multi-line EJS comment alongside real logic emits valid, fully-commented JS', () => {
+    const t = new Template(`<div>
+    <%# Built unconditionally for owners: gating on a segment existing at render
+        time leaves the first one created with no way to manage it until reload. %>
+    <% if (isOwner) { %><span>hi</span><% } %>
+</div>`);
+    const result = t.toModule('template');
+
+    assert.equal(result, `import createElement from 'dolla/createElement';
+
+export default function template(locals={}) {
+  let {isOwner} = locals;
+  var __a = [];
+  __a.push("\\n    ");
+  // Built unconditionally for owners: gating on a segment existing at render
+  //         time leaves the first one created with no way to manage it until reload.
+  __a.push("    ");
+  if (isOwner) {
+    __a.push(createElement("span", {content: "hi"}));
+  }
+  return [createElement("div", {content: __a})];
 }
 `);
   });
