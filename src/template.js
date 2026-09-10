@@ -80,13 +80,58 @@ export class Template {
     }
   }
 
+  // Strip comments and string literals in a single left-to-right pass, so a
+  // quote inside a comment (or a comment marker inside a string) can't shift
+  // what the other gets stripped as. String contents are masked to `""`;
+  // comment contents are dropped, with embedded newlines preserved so
+  // line-anchored regexes elsewhere still line up.
+  _maskCommentsAndStrings(code) {
+    let out = '';
+    let i = 0;
+    const n = code.length;
+    while (i < n) {
+      const ch = code[i];
+      const next = code[i + 1];
+
+      if (ch === '/' && next === '/') {
+        let j = i + 2;
+        while (j < n && code[j] !== '\n') j++;
+        i = j;
+        continue;
+      }
+
+      if (ch === '/' && next === '*') {
+        let j = i + 2;
+        while (j < n && !(code[j] === '*' && code[j + 1] === '/')) {
+          if (code[j] === '\n') out += '\n';
+          j++;
+        }
+        i = Math.min(j + 2, n);
+        continue;
+      }
+
+      if (ch === "'" || ch === '"' || ch === '`') {
+        const quote = ch;
+        let j = i + 1;
+        while (j < n && code[j] !== quote) {
+          if (code[j] === '\\') j++;
+          j++;
+        }
+        i = Math.min(j + 1, n);
+        out += '""';
+        continue;
+      }
+
+      out += ch;
+      i++;
+    }
+    return out;
+  }
+
   // Identifier tracking
   extractIdentifiers(expr) {
-    // Strip string literals
-    let cleaned = expr
-      .replace(/'[^']*'/g, '""')
-      .replace(/"[^"]*"/g, '""')
-      .replace(/`[^`]*`/g, '""');
+    // Strip comments and string literals
+    let cleaned = this._maskCommentsAndStrings(expr);
 
     // Collect locally-scoped identifiers (function/arrow params, local declarations)
     const scoped = new Set();
@@ -745,7 +790,9 @@ export class Template {
         }
       } else if (child instanceof JsNode) {
         if (child.modifier === 'comment') {
-          lines.push(`  // ${child.value}`);
+          for (const l of child.value.split('\n')) {
+            lines.push(`  // ${l}`);
+          }
         } else if (child.modifier === 'escape' || child.modifier === 'unescape') {
           lines.push(`  __output.push(...[].concat(${child.value}));`);
         } else {

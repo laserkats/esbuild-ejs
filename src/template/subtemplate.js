@@ -97,7 +97,9 @@ export class Subtemplate {
       } else if (child.modifier === 'escape' || child.modifier === 'unescape') {
         lines.push(`  ${childAcc}.push(...[].concat(${child.value}));`);
       } else if (child.modifier === 'comment') {
-        lines.push(`  // ${child.value}`);
+        for (const l of child.value.split('\n')) {
+          lines.push(`  // ${l}`);
+        }
       } else if (child.name !== undefined) {
         // HtmlTag
         const js = child.toJS(varGen);

@@ -6,7 +6,7 @@ export class JsNode {
 
   toJS(accumulator) {
     if (this.modifier === 'comment') {
-      return `// ${this.value}`;
+      return this.value.split('\n').map(line => `// ${line}`).join('\n');
     }
 
     if (this.modifier === 'escape' || this.modifier === 'unescape') {
