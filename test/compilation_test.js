@@ -769,4 +769,28 @@ export default function template(locals={}) {
 }
 `);
   });
+
+  test('regex literals and template interpolations do not confuse bracket balancing', () => {
+    const t = new Template(
+`<section>
+<% const escapeCell = value => {
+  const str = String(value);
+  return /[",\\n\\r]/.test(str) ? \`"\${str.replace(/"/g, '""')}"\` : str;
+} %>
+<%= escapeCell('foo') %>
+</section>`);
+    const result = t.toModule('template');
+
+    assert.doesNotThrow(() => new Function(result.replace(/^import .*\n/m, '').replace('export default ', '')));
+    assert.ok(!result.includes('__b'), 'arrow function body should not open a nested scope');
+    assert.ok(result.includes('__a.push(escapeCell(\'foo\'));'));
+  });
+
+  test('regex literal containing a quote does not open a string', () => {
+    const t = new Template(`<% const q = /"/.test(s) %><p><%= q %></p>`);
+    const result = t.toModule('template');
+
+    assert.ok(result.includes('const q = /"/.test(s)'));
+    assert.ok(result.includes('createElement("p"'));
+  });
 });
