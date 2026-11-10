@@ -794,3 +794,18 @@ export default function template(locals={}) {
     assert.ok(result.includes('createElement("p"'));
   });
 });
+
+describe('many subtemplates', () => {
+  for (const count of [26, 27, 60, 703]) {
+    test(`${count} subtemplate callbacks compile to valid, unique variable names`, () => {
+      const source = Array.from({ length: count }, () => '<%= [1].map(() => { %><b>x</b><% }) %>').join('\n');
+      const result = new Template(source).toModule('template');
+      const names = [...result.matchAll(/var (__\w+) = \[\]/g)].map(m => m[1]);
+
+      // one accumulator per callback plus one for the top-level content
+      assert.equal(names.length, count + 1);
+      assert.equal(new Set(names).size, names.length);
+      assert.ok(names.every(n => /^__[a-z]+$/.test(n)));
+    });
+  }
+});
